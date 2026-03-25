@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dengue AI Diagnostic System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .main-card { 
+            border: none; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2); 
+            overflow: hidden; 
+        }
+        .header-section { 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+            color: white; 
+            padding: 50px 20px; 
+            text-align: center;
+        }
+        .header-section h1 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .required-asterisk {
+            color: #dc3545;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+        }
+        .field-range {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-left: auto;
+        }
+        .feature-input { 
+            transition: all 0.3s;
+            border: 1.5px solid #dee2e6;
+            font-size: 0.95rem;
+        }
+        .feature-input:focus { 
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+        .extracted-highlight { 
+            border: 2px solid #28a745 !important; 
+            background-color: #f0fff4 !important;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+            border-radius: 10px;
+        }
+        .alert-success-result {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            border-radius: 10px;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+            border-radius: 10px;
+        }
+        .prediction-result {
+            font-size: 2rem;
+            font-weight: 700;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .positive-result {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+        .negative-result {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+        }
+        .sidebar-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #667eea;
+            margin-bottom: 20px;
+        }
+        .sidebar-section h5 {
+            color: #1e3c72;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .file-upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s;
+        }
+        .file-upload-area:hover {
+            background-color: #e7e9ff;
+            border-color: #764ba2;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        .reference-guide {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .reference-guide p {
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+        .info-badge {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1e3c72;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .row-divider {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .col-form-group {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <div class="main-card bg-white">
+        <div class="header-section">
+            <h1>🩺 Dengue Prediction ML System</h1>
+            <p class="lead mb-2">Analyze Medical Reports or Enter Patient Data Manually</p>
+        </div>
+
+        <div class="p-4 p-md-5">
+            <!-- Success/Error Messages -->
+            {% if error %}
+            <div class="alert alert-error alert-dismissible fade show" role="alert">
+                <strong>❌ Error:</strong> {{ error|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+
+            {% if msg %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <strong>ℹ️ Info:</strong> {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+
+            <!-- Prediction Result -->
+            {% if result %}
+            <div class="prediction-result {% if 'POSITIVE' in result %}positive-result{% else %}negative-result{% endif %}">
+                <div>{{ result }}</div>
+                <div style="font-size: 1.2rem; margin-top: 15px;">Confidence: <strong>{{ confidence }}%</strong></div>
+            </div>
+
+            <!-- Entered Data Summary -->
+            {% if input_data %}
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📝 Data Entered</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in input_data.items() %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="border rounded p-2 bg-light">
+                                <small class="text-muted d-block">{{ key }}</small>
+                                <strong class="text-primary">{{ value }}</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="row g-4">
+                <!-- Main Form Column -->
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="text-primary m-0">📋 Patient Clinical Data</h4>
+                        <small class="text-muted">
+                            <span class="required-asterisk">*</span> = Required field
+                        </small>
+                    </div>
+                    
+                    <form action="/predict" method="POST" id="predictionForm">
+                        <div class="row-divider">
+                            {% for f in features %}
+                            <div class="col-form-group">
+                                <label class="form-label">
+                                    {{ f }}
+                                    {% set is_optional = optional_features and f in optional_features %}
+                                    {% if not is_optional %}
+                                    <span class="required-asterisk">*</span>
+                                    {% endif %}
+                                    {% if field_metadata[f].range %}
+                                    <span class="field-range">({{ field_metadata[f].range }})</span>
+                                    {% endif %}
+                                </label>
+                                
+                                {% if field_metadata[f].type == 'select' %}
+                                <select name="{{ f }}" class="form-select feature-input {% if extracted and f in extracted and extracted[f] %}extracted-highlight{% endif %}" {% if not is_optional %}required{% endif %}>
+                                    <option value="" disabled selected>-- Select {{ f }} --</option>
+                                    {% for option in field_metadata[f].options %}
+                                    <option value="{{ option }}" 
+                                            {% if extracted and f in extracted and (extracted[f] == option or (option == 'Male' and extracted[f] == 1) or (option == 'Female' and extracted[f] == 0) or (option == 'Yes' and extracted[f] == 1) or (option == 'No' and extracted[f] == 0)) %}selected{% endif %}>
+                                        {{ option }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% else %}
+                                <input type="number" 
+                                       step="0.01" 
+                                       name="{{ f }}" 
+                                       class="form-control feature-input {% if extracted and f in extracted and extracted[f] is not none %}extracted-highlight{% endif %}" 
+                                       value="{% if extracted and f in extracted and extracted[f] is not none %}{{ extracted[f] }}{% endif %}" 
+                                       {% if field_metadata[f].placeholder %}placeholder="{{ field_metadata[f].placeholder }}"{% endif %}
+                                       required>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary-custom flex-grow-1">
+                                🔍 Predict Dengue Status
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                ↻ Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Sidebar Column -->
+                <div class="col-lg-4">
+                    <!-- File Upload Section -->
+                    <div class="sidebar-section">
+                        <h5>📂 Upload Medical Report</h5>
+                        
+                        <div class="mb-3 p-2 bg-info bg-opacity-10 rounded small">
+                            <strong>💡 Recommended:</strong> Use CSV format for best results
+                        </div>
+
+                        <form action="/predict" method="POST" enctype="multipart/form-data">
+                            <div class="file-upload-area mb-3">
+                                <input type="file" 
+                                       name="file" 
+                                       class="form-control" 
+                                       id="fileUpload"
+                                       accept=".csv"
+                                       onchange="updateFileName(this)">
+                                <small class="text-muted d-block mt-2">
+                                    <strong>Format:</strong> CSV only
+                                </small>
+                                <small class="text-muted d-block mt-1" id="fileName">
+                                    📁 Select file or drag & drop
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-primary-custom w-100">
+                                Extract & Verify
+                            </button>
+                        </form>
+
+                        <hr class="my-2">
+
+                        <div class="text-center">
+                            <p class="small text-muted mb-2">📥 No file? Download template:</p>
+                            <a href="/download-template" class="btn btn-outline-success btn-sm w-100">
+                                📊 Download CSV Template
+                            </a>
+                        </div>
+
+                        <div class="alert alert-info small mt-3 mb-0">
+                            <strong>📋 How to use:</strong>
+                            <ol class="mb-0 mt-2 ps-3">
+                                <li>Download the CSV template</li>
+                                <li>Fill patient data from medical report</li>
+                                <li>Upload the CSV file</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Reference Guide Section -->
+                    <div class="sidebar-section">
+                        <h5>📖 Normal Reference Ranges</h5>
+                        <div class="reference-guide">
+                            <p><strong>Hemoglobin:</strong> 12-17 g/dl</p>
+                            <p><strong>Platelets:</strong> 150-450k (⚠️ Danger if < 100k)</p>
+                            <p><strong>WBC:</strong> 4k-11k (🔴 Often < 4k in Dengue)</p>
+                            <p><strong>HCT:</strong> 35-50% (Packed cell volume)</p>
+                            <p><strong>RBC:</strong> 4.5-6.5 million/µL</p>
+                            <p><strong>MCV/MCH/MCHC:</strong> Red cell indices</p>
+                            <hr class="my-2">
+                            <p class="mb-2"><strong>💡 Symptoms (Yes/No):</strong></p>
+                            <p class="small text-muted mb-0">Fever, Body Pain, Headache, Rash, Bleeding Signs, Vomiting</p>
+                            <hr class="my-2">
+                            <div class="alert alert-warning py-2 small mb-0">
+                                <strong>⚠️ Disclaimer:</strong> For educational use only. Always consult a doctor for medical diagnosis.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Badge -->
+                    <div class="text-center">
+                        <span class="info-badge">✓ All fields are required for accurate prediction</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function updateFileName(input) {
+        const fileName = document.getElementById('fileName');
+        if (input.files && input.files[0]) {
+            fileName.textContent = '📄 ' + input.files[0].name;
+        }
+    }
+
+    // Drag and drop functionality
+    const fileUpload = document.getElementById('fileUpload');
+    const fileArea = fileUpload.parentElement;
+
+    fileArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileArea.style.backgroundColor = '#e7e9ff';
+    });
+
+    fileArea.addEventListener('dragleave', () => {
+        fileArea.style.backgroundColor = '#f8f9fa';
+    });
+
+    fileArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileArea.style.backgroundColor = '#f8f9fa';
+        fileUpload.files = e.dataTransfer.files;
+        updateFileName(fileUpload);
+    });
+</script>
+</body>
+</html>
